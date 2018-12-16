@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("Memory Cache", "austinv900", "1.0.0")]
+    [Info("Memory Cache", "austinv900", "1.0.1")]
     [Description("Provides api for in-memory storage")]
     internal class MemoryCache : CovalencePlugin
     {
@@ -75,6 +75,7 @@ namespace Oxide.Plugins
             Unsubscribe(nameof(ProcessCacheCleanupItem));
             Unsubscribe(nameof(_memoryCache));
             Unsubscribe(nameof(ExpireItem));
+            Unsubscribe(nameof(IsExpired));
         }
 
         private void OnPluginUnloaded(Plugin name)
@@ -125,24 +126,32 @@ namespace Oxide.Plugins
             }
         }
 
-        private void ProcessCacheCleanupItem(string key, CacheItem item, CacheItemOptions options, DateTimeOffset currentTimestamp)
+        private bool IsExpired(CacheItem item, CacheItemOptions options, DateTimeOffset current)
         {
             if (options.AbsoluteExpiration.HasValue)
             {
-                if (options.AbsoluteExpiration >= currentTimestamp)
+                if (options.AbsoluteExpiration >= current)
                 {
-                    ExpireItem(key, item);
-                    return;
+                    return true;
                 }
             }
 
             if (options.SlidingExpiration.HasValue)
             {
-                if ((currentTimestamp - item.LastAccess) >= options.SlidingExpiration.Value)
+                if ((current - item.LastAccess) >= options.SlidingExpiration.Value)
                 {
-                    ExpireItem(key, item);
-                    return;
+                    return true;
                 }
+            }
+
+            return false;
+        }
+
+        private void ProcessCacheCleanupItem(string key, CacheItem item, CacheItemOptions options, DateTimeOffset currentTimestamp)
+        {
+            if (IsExpired(item, options, currentTimestamp))
+            {
+                ExpireItem(key, item);
             }
         }
 
@@ -296,6 +305,12 @@ namespace Oxide.Plugins
             var obj = (CacheItem)null;
             if (_memoryCache.TryGetValue(key, out obj))
             {
+                if (IsExpired(obj, obj.Options, DateTimeOffset.UtcNow))
+                {
+                    ExpireItem(key, obj);
+                    return null;
+                }
+
                 obj.LastAccess = DateTimeOffset.UtcNow;
                 return obj.StoredObject;
             }
