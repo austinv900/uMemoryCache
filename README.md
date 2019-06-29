@@ -19,7 +19,7 @@ public System.Action<System.Object> ExpirationCallback { get; set; }
 public System.Timespan? SlidingExpiration { get; set; }
 
 // The plugin responsible for this cached item. Used to determine if the entry needs to be removed when a plugin is unloaded (BROKEN)
-public Oxide.Core.Plugins.Plugin Plugin { get; set; }
+public System.String Plugin { get; set; }
 ```
 
 
