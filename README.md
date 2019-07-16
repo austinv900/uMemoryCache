@@ -42,7 +42,6 @@ namespace Oxide.Plugins
     {
       var options = new MemoryCache.CacheItemOptions()
       {
-        Plugin = this,
         SlidingExpiration = TimeSpan.FromMinutes(30)
       }
       
@@ -61,34 +60,20 @@ namespace Oxide.Plugins
 ## API
 
 ```csharp
-private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, TimeSpan? slidingExpire, Plugin plugin);
-
 private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, TimeSpan? slidingExpire);
-
-private bool Add(string key, object item, Action<object> expireCallback, TimeSpan? slidingExpire, Plugin plugin);
 
 private bool Add(string key, object item, Action<object> expireCallback, TimeSpan? slidingExpire);
 
-private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, Plugin plugin);
-
 private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire);
-
-private bool Add(string key, object item, TimeSpan? slidingExpire, Plugin plugin);
 
 private bool Add(string key, object item, TimeSpan? slidingExpire);
 
-private bool Add(string key, object item, DateTimeOffset? absoluteExpire, Plugin plugin);
-
 private bool Add(string key, object item, DateTimeOffset? absoluteExpire);
-
-private bool Add(string key, object item, Plugin plugin);
 
 private bool Add(string key, object item);
 
 private object Get(string key);
 
 private bool Remove(string key);
-
-private void Remove(Plugin plugin);
 
 ```
