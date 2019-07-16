@@ -17,9 +17,6 @@ public System.Action<System.Object> ExpirationCallback { get; set; }
 // Gets or sets how long a cache entry can be inactive (e.g. not accessed) before it will be removed.
 // This will not extend the entry lifetime beyond the absolute expiration (if set).
 public System.Timespan? SlidingExpiration { get; set; }
-
-// The plugin responsible for this cached item. Used to determine if the entry needs to be removed when a plugin is unloaded (BROKEN)
-public System.String Plugin { get; set; }
 ```
 
 
