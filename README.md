@@ -1,5 +1,4 @@
-Memory Cache is a plugin API that allows other plugins to store data in-memory and retrieve it later.
-Plugins have optional features to expire items after a specific amount of time.
+Memory Cache is a plugin API that allows other plugins to store data in-memory and retrieve it later. Plugins have optional features to expire items after a specific amount of time.
 
 ## CacheItemOptions
 
