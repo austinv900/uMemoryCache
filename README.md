@@ -1,8 +1,8 @@
-# MemoryCache
-MemoryCache is a plugin api that allows other plugins to store data in-memory and retrieve it later.
+Memory Cache is a plugin API that allows other plugins to store data in-memory and retrieve it later.
 Plugins have optional features to expire items after a specific amount of time.
 
 ## CacheItemOptions
+
 Options used to modify the behavior of the cached object
 ```csharp
 // Gets or sets an absolute expiration date for the cache entry.
@@ -19,8 +19,8 @@ public System.Action<System.Object> ExpirationCallback { get; set; }
 public System.Timespan? SlidingExpiration { get; set; }
 ```
 
-
 ## Requiring Plugin
+
 Not required but allows you to use the CacheItemOptions class helper
 
 ```csharp
@@ -31,9 +31,10 @@ using Oxide.Core.Plugins;
 namespace Oxide.Plugins
 {
   [Info("My Plugin", "austinv90", "1.0.0")]
-  internal class MyPlugin : CovalencePlugin
+  public class MyPlugin : CovalencePlugin
   {
-    [PluginReference]MemoryCache MemoryCache;
+    [PluginReference]
+    private MemoryCache MemoryCache;
     
     private void Init()
     {
