@@ -1,11 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("Memory Cache", "austinv900", "1.0.1")]
+    [Info("Memory Cache", "austinv900", "1.0.6")]
     [Description("Provides api for in-memory storage")]
     internal class MemoryCache : CovalencePlugin
     {
@@ -34,11 +33,6 @@ namespace Oxide.Plugins
             /// Gets or sets how long a cache entry can be inactive (e.g. not accessed) before it will be removed. This will not extend the entry lifetime beyond the absolute expiration (if set).
             /// </summary>
             public TimeSpan? SlidingExpiration { get; set; }
-
-            /// <summary>
-            /// Gets or sets the registering plugin so cached items can be removed
-            /// </summary>
-            public Plugin Plugin { get; set; }
         }
 
         /// <summary>
@@ -78,31 +72,6 @@ namespace Oxide.Plugins
             Unsubscribe(nameof(IsExpired));
         }
 
-        private void OnPluginUnloaded(Plugin name)
-        {
-            if (name == this)
-            {
-                return;
-            }
-
-            foreach (var cacheItem in _memoryCache.ToArray())
-            {
-                var options = cacheItem.Value.Options;
-                if (options == null)
-                {
-                    continue;
-                }
-
-                if (!options.AbsoluteExpiration.HasValue && !options.SlidingExpiration.HasValue && options.Plugin != null)
-                {
-                    if (options.Plugin == name)
-                    {
-                        ExpireItem(cacheItem.Key, cacheItem.Value);
-                    }
-                }
-            }
-        }
-
         private void Unload()
         {
             foreach (var cacheItem in _memoryCache.ToArray())
@@ -130,7 +99,7 @@ namespace Oxide.Plugins
         {
             if (options.AbsoluteExpiration.HasValue)
             {
-                if (options.AbsoluteExpiration >= current)
+                if (options.AbsoluteExpiration <= current)
                 {
                     return true;
                 }
@@ -138,7 +107,7 @@ namespace Oxide.Plugins
 
             if (options.SlidingExpiration.HasValue)
             {
-                if ((current - item.LastAccess) >= options.SlidingExpiration.Value)
+                if ((current - item.LastAccess) <= options.SlidingExpiration.Value)
                 {
                     return true;
                 }
@@ -180,7 +149,7 @@ namespace Oxide.Plugins
                     {
                         d.Dispose();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
 #if DEBUG
                         PrintWarning($"Failed to dispose IDisposable with key '{key}' | {e.Message}");
@@ -207,7 +176,7 @@ namespace Oxide.Plugins
                 options = new CacheItemOptions();
             }
 
-            if (options.Plugin == null && !options.AbsoluteExpiration.HasValue && !options.SlidingExpiration.HasValue && !options.AbsoluteExpirationRelativeToNow.HasValue)
+            if (!options.AbsoluteExpiration.HasValue && !options.SlidingExpiration.HasValue && !options.AbsoluteExpirationRelativeToNow.HasValue)
             {
                 options.SlidingExpiration = TimeSpan.FromHours(1);
             }
@@ -236,8 +205,8 @@ namespace Oxide.Plugins
 #endif
             return true;
         }
-        
-        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, TimeSpan? slidingExpire, Plugin plugin)
+
+        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, TimeSpan? slidingExpire)
         {
             if (string.IsNullOrEmpty(key) || item == null)
             {
@@ -265,35 +234,18 @@ namespace Oxide.Plugins
                 options.ExpirationCallback = expireCallback;
             }
 
-            if (plugin != null)
-            {
-                options.Plugin = plugin;
-            }
-
             return Add(key, item, options);
         }
 
-        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, TimeSpan? slidingExpire) => Add(key, item, expireCallback, absoluteExpire, slidingExpire, (Plugin)null);
+        private bool Add(string key, object item, Action<object> expireCallback, TimeSpan? slidingExpire) => Add(key, item, expireCallback, (DateTimeOffset?)null, slidingExpire);
 
-        private bool Add(string key, object item, Action<object> expireCallback, TimeSpan? slidingExpire, Plugin plugin) => Add(key, item, expireCallback, (DateTimeOffset?)null, slidingExpire, plugin);
+        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire) => Add(key, item, expireCallback, absoluteExpire, (TimeSpan?)null);
 
-        private bool Add(string key, object item, Action<object> expireCallback, TimeSpan? slidingExpire) => Add(key, item, expireCallback, slidingExpire, (Plugin)null);
+        private bool Add(string key, object item, TimeSpan? slidingExpire) => Add(key, item, (Action<object>)null, (DateTimeOffset?)null, slidingExpire);
 
-        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire, Plugin plugin) => Add(key, item, expireCallback, absoluteExpire, (TimeSpan?)null, plugin);
+        private bool Add(string key, object item, DateTimeOffset? absoluteExpire) => Add(key, item, null, absoluteExpire, null);
 
-        private bool Add(string key, object item, Action<object> expireCallback, DateTimeOffset? absoluteExpire) => Add(key, item, expireCallback, absoluteExpire, (Plugin)null);
-
-        private bool Add(string key, object item, TimeSpan? slidingExpire, Plugin plugin) => Add(key, item, (Action<object>)null, (DateTimeOffset?)null, slidingExpire, plugin);
-
-        private bool Add(string key, object item, TimeSpan? slidingExpire) => Add(key, item, slidingExpire, (Plugin)null);
-
-        private bool Add(string key, object item, DateTimeOffset? absoluteExpire, Plugin plugin) => Add(key, item, null, absoluteExpire, null, plugin);
-
-        private bool Add(string key, object item, DateTimeOffset? absoluteExpire) => Add(key, item, absoluteExpire, (Plugin)null);
-
-        private bool Add(string key, object item, Plugin plugin) => Add(key, item, (Action<object>)null, (DateTimeOffset?)null, (TimeSpan?)null, plugin);
-
-        private bool Add(string key, object item) => Add(key, item, (Plugin)null);
+        private bool Add(string key, object item) => Add(key, item, (Action<object>)null, (DateTimeOffset?)null, (TimeSpan?)null);
 
         private object Get(string key)
         {
@@ -334,16 +286,6 @@ namespace Oxide.Plugins
             }
 
             return false;
-        }
-
-        private void Remove(Plugin plugin)
-        {
-            if (plugin == null)
-            {
-                return;
-            }
-
-            OnPluginUnloaded(plugin);
         }
     }
 }
